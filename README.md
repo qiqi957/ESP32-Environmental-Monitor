@@ -41,7 +41,7 @@
 
 | 原理图 | 实物图 | 手机网页 |
 |:---:|:---:|:---:|
-| ![原理图](images/schematic.png) | ![实物图](images/hardware.jpg) | ![手机网页](images/web_mobile.jpg) |
+| ![原理图](images/schematic.png) | ![实物图](images/hardware.jpg) | ![手机网页](images/phonemobile.jpg) |
 
 ## 🚀 快速开始 (Getting Started)
 
