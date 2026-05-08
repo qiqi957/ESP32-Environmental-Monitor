@@ -73,3 +73,20 @@
 ### 2️⃣ 克隆项目
 ```bash
 git clone https://github.com/qiqi957/ESP32-Environmental-Monitor.git
+
+
+## 🙏 寻求指导与交流
+
+> 🧑‍🎓 我是嵌入式初学者，这个项目是我学习过程中的一次尝试。由于水平有限，代码和硬件设计中可能存在以下不足：
+>
+> - 代码规范可能有待改进
+> - 可能存在潜在bug或稳定性问题
+> - PCB设计经验不足，可能有优化空间
+>
+> **如果您有任何建议、批评或改进思路，都非常欢迎告诉我！**
+>
+> - 发现Bug → 请提 [Issue](https://github.com/你的用户名/ESP32-Environmental-Monitor/issues)
+> - 有改进想法 → 欢迎 Fork 并提交 Pull Request
+> - 想交流学习 → 可以发邮件给我
+>
+> 感谢每一位愿意花时间指导新手的前辈！🙏
