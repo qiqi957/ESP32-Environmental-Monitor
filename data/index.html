@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ESP32 环境监测站</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header h1 span {
+            font-size: 32px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .status-normal {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-alert {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sensor-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
+            padding: 15px 10px;
+            text-align: center;
+        }
+
+        .sensor-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .sensor-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .sensor-unit {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .sensor-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .light-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .light-card .sensor-value {
+            color: white;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            height: 12px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: #ffd700;
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .advice-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .advice-text {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .advice-detail {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 450px) {
+            .sensor-value { font-size: 22px; }
+            .sensor-icon { font-size: 28px; }
+            .sensor-grid { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card header">
+            <h1>
+                <span>🌡️</span>
+                ESP32 环境监测站
+                <span>💧</span>
+            </h1>
+            <div class="status-badge" id="statusBadge">加载中...</div>
+        </div>
+
+        <div class="sensor-grid">
+            <div class="sensor-card">
+                <div class="sensor-icon">🌡️</div>
+                <div class="sensor-value">
+                    <span id="temp">--</span><span class="sensor-unit">°C</span>
+                </div>
+                <div class="sensor-label">温度</div>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-icon">💧</div>
+                <div class="sensor-value">
+                    <span id="humi">--</span><span class="sensor-unit">%</span>
+                </div>
+                <div class="sensor-label">湿度</div>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-icon">☀️</div>
+                <div class="sensor-value">
+                    <span id="light">--</span><span class="sensor-unit">%</span>
+                </div>
+                <div class="sensor-label">光照</div>
+            </div>
+        </div>
+
+        <div class="card light-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span>☀️ 光照强度</span>
+                <span id="lightPercent">0</span><span>%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="lightBar" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <div class="card advice-card">
+            <div class="advice-text" id="adviceTitle">🏠 环境舒适</div>
+            <div class="advice-detail" id="adviceDetail">温湿度适宜，光照充足</div>
+        </div>
+
+        <!--文件管理卡片-->
+        <div class="card" style="text-align: center;">
+             <div class="advice-text" style="font-size: 16px; margin-bottom: 15px;">📁 文件管理</div>
+           
+         <!-- 文件上传 -->
+        <div style="margin-bottom: 15px;">
+            <input type="file" id="uploadFile" style="margin: 5px 0;">
+            <button onclick="uploadFile()" style="padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 10px; margin-top: 5px;">📤 上传到SD卡</button>
+            <div id="uploadStatus" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
+        </div>
+    
+        <!-- 文件列表 -->
+        <button onclick="loadFileList()" style="padding: 8px 20px; background: #17a2b8; color: white; border: none; border-radius: 10px;">📋 查看SD卡文件</button>
+        <div id="fileList" style="margin-top: 10px; font-size: 12px; text-align: left; max-height: 150px; overflow: auto;"></div>
+        </div>
+
+        <div class="timestamp">
+            🔄 数据实时更新 | <span id="updateTime">--:--:--</span>
+        </div>
+    </div>
+
+    <script>
+        function formatTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('zh-CN');
+        }
+
+        function updateUI(data) {
+            document.getElementById('temp').innerText = data.temperature;
+            document.getElementById('humi').innerText = data.humidity;
+            document.getElementById('light').innerText = data.light;
+            document.getElementById('lightPercent').innerText = data.light;
+            
+            const lightBar = document.getElementById('lightBar');
+            lightBar.style.width = data.light + '%';
+            
+            document.getElementById('updateTime').innerText = formatTime();
+            
+            const temp = data.temperature;
+            const humi = data.humidity;
+            const light = data.light;
+            
+            const badge = document.getElementById('statusBadge');
+            const adviceTitle = document.getElementById('adviceTitle');
+            const adviceDetail = document.getElementById('adviceDetail');
+            
+            if (temp > 30) {
+                badge.className = 'status-badge status-alert';
+                badge.innerText = '⚠️ 温度过高';
+                adviceTitle.innerText = '🔥 注意防暑';
+                adviceDetail.innerText = '温度超过30°C，建议开空调或通风';
+            } else if (temp < 18) {
+                badge.className = 'status-badge status-alert';
+                badge.innerText = '❄️ 温度过低';
+                adviceTitle.innerText = '🧥 注意保暖';
+                adviceDetail.innerText = '温度低于18°C，建议增添衣物';
+            } else if (humi > 70) {
+                badge.className = 'status-badge status-warning';
+                badge.innerText = '💧 湿度过高';
+                adviceTitle.innerText = '💨 注意除湿';
+                adviceDetail.innerText = '湿度超过70%，建议开启除湿机';
+            } else if (humi < 40) {
+                badge.className = 'status-badge status-warning';
+                badge.innerText = '🔥 空气干燥';
+                adviceTitle.innerText = '💦 注意加湿';
+                adviceDetail.innerText = '湿度低于40%，建议使用加湿器';
+            } else if (light > 80) {
+                badge.className = 'status-badge status-warning';
+                badge.innerText = '☀️ 光照过强';
+                adviceTitle.innerText = '🕶️ 注意遮阳';
+                adviceDetail.innerText = '光照过强，建议拉上窗帘';
+            } else if (light < 20) {
+                badge.className = 'status-badge status-warning';
+                badge.innerText = '🌙 光线不足';
+                adviceTitle.innerText = '💡 建议开灯';
+                adviceDetail.innerText = '光线较暗，建议开启照明';
+            } else {
+                badge.className = 'status-badge status-normal';
+                badge.innerText = '✅ 环境舒适';
+                adviceTitle.innerText = '🏠 环境舒适';
+                adviceDetail.innerText = '温湿度适宜，光照充足';
+            }
+        }
+
+        function fetchData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    updateUI(data);
+                })
+                .catch(error => {
+                    console.error('获取数据失败:', error);
+                    document.getElementById('statusBadge').innerText = '📡 连接中...';
+                });
+        }
+
+        fetchData();
+        setInterval(fetchData, 2000);
+        function uploadFile() {
+            const fileInput = document.getElementById('uploadFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请选择文件');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            document.getElementById('uploadStatus').innerHTML = '⏳ 上传中...';
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('uploadStatus').innerHTML = '✅ ' + data;
+                loadFileList();
+            })
+            .catch(error => {
+                document.getElementById('uploadStatus').innerHTML = '❌ 上传失败';
+            });
+        }
+
+        function loadFileList() {
+            fetch('/list')
+                .then(response => response.text())
+                .then(html => {
+                    // 提取文件列表部分
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const items = doc.querySelectorAll('li');
+                    
+                    let listHtml = '<div style="margin-top: 10px;"><strong>📄 SD卡文件：</strong></div><ul style="margin: 5px 0;">';
+                    items.forEach(item => {
+                        listHtml += '<li style="margin: 3px 0;">' + item.innerHTML + '</li>';
+                    });
+                    listHtml += '</ul>';
+                    document.getElementById('fileList').innerHTML = listHtml;
+                })
+                .catch(error => {
+                    document.getElementById('fileList').innerHTML = '<span style="color: red;">获取文件列表失败</span>';
+                });
+        }
+    </script>
+</body>
+</html>
